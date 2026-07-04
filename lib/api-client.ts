@@ -16,21 +16,42 @@ export async function sendMessage(
 
     console.log('[v0] API Call:', { service, API_BASE, payload })
 
-    const response = await fetch(`${API_BASE}/api/${service}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('[v0] API error:', { status: response.status, data: errorData })
-      throw new Error(`API error: ${response.statusText}`)
+    try {
+      const response = await fetch(`${API_BASE}/api/${service}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.error('[v0] API error:', { status: response.status, data: errorData })
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (fetchError) {
+      clearTimeout(timeoutId)
+      
+      if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
+        // Network error or CORS issue
+        console.error('[v0] Network/CORS error:', {
+          url: `${API_BASE}/api/${service}`,
+          error: fetchError.message,
+        })
+        throw new Error(`Network error: Unable to reach backend at ${API_BASE}`)
+      }
+      
+      throw fetchError
     }
-
-    return await response.json()
   } catch (error) {
     console.error('[v0] API call failed:', error)
     throw error
