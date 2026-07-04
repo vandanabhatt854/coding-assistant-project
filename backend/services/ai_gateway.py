@@ -43,7 +43,7 @@ class AIGateway:
             timeout=30.0,
         )
 
-    async def generate_code(self, prompt: str) -> dict:
+    async def generate(self, prompt: str) -> dict:
         """Generate code from a prompt"""
         system_prompt = """You are an expert code generator. When given a request, generate clean, well-documented code.
         Always include comments and follow best practices.
@@ -58,9 +58,10 @@ class AIGateway:
             model="gpt-4-turbo",
             system=system_prompt,
             user_prompt=prompt,
+            service_type="generate",
         )
 
-    async def explain_code(self, code: str) -> dict:
+    async def explain(self, code: str) -> dict:
         """Explain code in simple language"""
         system_prompt = """You are a helpful code explanation assistant. Explain the provided code clearly and concisely,
         breaking it down into simple concepts. Make it understandable for beginners.
@@ -74,9 +75,10 @@ class AIGateway:
             model="gpt-4-turbo",
             system=system_prompt,
             user_prompt=f"Please explain this code:\n\n{code}",
+            service_type="explain",
         )
 
-    async def optimize_code(self, code: str) -> dict:
+    async def optimize(self, code: str) -> dict:
         """Optimize code for performance and readability"""
         system_prompt = """You are an expert code optimization specialist. Analyze the given code and suggest improvements
         for performance, readability, and best practices. Provide the optimized version.
@@ -91,9 +93,10 @@ class AIGateway:
             model="gpt-4-turbo",
             system=system_prompt,
             user_prompt=f"Please optimize this code:\n\n{code}",
+            service_type="optimize",
         )
 
-    async def debug_code(self, code: str, error: Optional[str] = None) -> dict:
+    async def debug(self, code: str, error: Optional[str] = None) -> dict:
         """Identify and fix bugs in code"""
         if error:
             debug_prompt = f"Please debug this code. Error message: {error}\n\nCode:\n{code}"
@@ -113,6 +116,7 @@ class AIGateway:
             model="gpt-4-turbo",
             system=system_prompt,
             user_prompt=debug_prompt,
+            service_type="debug",
         )
 
     async def _call_ai(self, model: str, system: str, user_prompt: str, service_type: str = 'generate') -> dict:

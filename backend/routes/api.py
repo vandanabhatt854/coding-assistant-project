@@ -53,7 +53,7 @@ async def generate_code():
         if not prompt:
             return jsonify({"error": "prompt is required"}), 400
 
-        result = await ai_gateway.generate_code(prompt)
+        result = await ai_gateway.generate(prompt)
 
         if result.get('error'):
             return jsonify(result), 500
@@ -76,7 +76,7 @@ async def explain_code():
         if not code:
             return jsonify({"error": "code is required"}), 400
 
-        result = await ai_gateway.explain_code(code)
+        result = await ai_gateway.explain(code)
 
         if result.get('error'):
             return jsonify(result), 500
@@ -99,7 +99,7 @@ async def optimize_code():
         if not code:
             return jsonify({"error": "code is required"}), 400
 
-        result = await ai_gateway.optimize_code(code)
+        result = await ai_gateway.optimize(code)
 
         if result.get('error'):
             return jsonify(result), 500
@@ -123,7 +123,7 @@ async def debug_code():
         if not code:
             return jsonify({"error": "code is required"}), 400
 
-        result = await ai_gateway.debug_code(code, error)
+        result = await ai_gateway.debug(code, error)
 
         if result.get('error'):
             return jsonify(result), 500
