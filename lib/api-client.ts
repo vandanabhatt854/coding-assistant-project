@@ -8,18 +8,25 @@ export async function sendMessage(
   code?: string
 ): Promise<AIResponse> {
   try {
+    // For explain, optimize, debug - use code as the main input
+    // For generate - use message as the prompt
+    const payload = service === 'generate' 
+      ? { prompt: message }
+      : { code: code || message }
+
+    console.log('[v0] API Call:', { service, API_BASE, payload })
+
     const response = await fetch(`${API_BASE}/api/${service}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        prompt: message,
-        code: code,
-      }),
+      body: JSON.stringify(payload),
     })
 
     if (!response.ok) {
+      const errorData = await response.text()
+      console.error('[v0] API error:', { status: response.status, data: errorData })
       throw new Error(`API error: ${response.statusText}`)
     }
 

@@ -154,24 +154,22 @@ export function ChatInterface() {
         )
       )
     } catch (error) {
-      console.error('[v0] Failed to get response:', error)
-
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      console.error('[v0] Error sending message:', error)
+      // Add error message to chat
       const errorMessage: Message = {
         id: Math.random().toString(36).slice(2),
         role: 'assistant',
-        type: 'error',
-        content: 'Failed to get response. Please make sure the backend is running.',
+        type: 'text',
+        content: `Failed to get response. Please ensure the backend is running on http://localhost:5000. Error: ${errorMsg}`,
         timestamp: new Date(),
+        service,
       }
 
       setSessions(prev =>
         prev.map(s =>
           s.id === activeSessionId
-            ? {
-                ...s,
-                messages: [...s.messages, errorMessage],
-                updatedAt: new Date(),
-              }
+            ? { ...s, messages: [...s.messages, errorMessage] }
             : s
         )
       )
