@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ServiceType } from '@/lib/types'
-import { Send, Zap, BookOpen, Gauge, Bug } from 'lucide-react'
+import { Send, Zap, BookOpen, Gauge, Bug, Search } from 'lucide-react'
 
 interface ChatInputProps {
   onSendMessage: (message: string, service: ServiceType) => void
@@ -17,6 +17,7 @@ const services: { type: ServiceType; label: string; icon: React.ReactNode }[] = 
   { type: 'explain', label: 'Explain', icon: <BookOpen className="h-4 w-4" /> },
   { type: 'optimize', label: 'Optimize', icon: <Gauge className="h-4 w-4" /> },
   { type: 'debug', label: 'Debug', icon: <Bug className="h-4 w-4" /> },
+  { type: 'generate', label: 'Algorithms', icon: <Search className="h-4 w-4" />, isAlgorithm: true },
 ]
 
 export function ChatInput({
@@ -79,7 +80,7 @@ export function ChatInput({
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask a question or paste code..."
+          placeholder={selectedService === 'generate' && services.some(s => (s as any).isAlgorithm && s.type === 'generate') ? "Try: bubble sort, quick sort, merge sort..." : "Ask a question or paste code..."}
           disabled={isLoading}
           className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           rows={1}

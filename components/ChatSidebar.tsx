@@ -2,6 +2,7 @@
 
 import { ChatSession } from '@/lib/types'
 import { Button } from '@/components/ui/button'
+import { AlgorithmReference } from './AlgorithmReference'
 import { Plus, Trash2, MessageSquare } from 'lucide-react'
 
 interface ChatSidebarProps {
@@ -71,6 +72,9 @@ export function ChatSidebar({
           </div>
         )}
       </div>
+
+      {/* Algorithm Reference */}
+      <AlgorithmReference />
 
       {/* Footer */}
       <div className="border-t border-sidebar-border p-4 text-xs text-sidebar-foreground/60">

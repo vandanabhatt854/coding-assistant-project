@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { ChatSession, Message, ServiceType } from '@/lib/types'
 import { ChatSidebar } from './ChatSidebar'
 import { ChatInput } from './ChatInput'
 import { Message as MessageComponent } from './Message'
 import { sendMessage } from '@/lib/api-client'
+import { detectAlgorithm } from '@/lib/algorithmDetector'
+import { BookOpen } from 'lucide-react'
 
 export function ChatInterface() {
   const [sessions, setSessions] = useState<ChatSession[]>([])
@@ -119,12 +122,29 @@ export function ChatInterface() {
 
     try {
       console.log('[v0] Sending message:', { content, service })
-      const response = await sendMessage(content, service)
+
+      // Check if the message is asking for an algorithm
+      const detected = detectAlgorithm(content)
+      let response: any
+
+      if (detected.found) {
+        console.log('[v0] Algorithm detected:', detected.algorithmName)
+        // Create a response with the algorithm code
+        response = {
+          content: `Here is the ${detected.algorithmName} implementation:\n\nComplexity:\n- Time: Best O(${detected.algorithmName === 'Bubble Sort' ? 'n' : 'n'}), Worst O(n²)\n- Space: O(1)\n\nThe code is shown below.`,
+          code: detected.code,
+          language: 'javascript',
+        }
+      } else {
+        // Send to backend API
+        response = await sendMessage(content, service)
+      }
+
       console.log('[v0] Received response:', response)
 
       // Update session title if it's still "New Conversation"
       if (activeSession.title === 'New Conversation') {
-        const newTitle = content.slice(0, 50).trim()
+        const newTitle = detected.found ? detected.algorithmName! : content.slice(0, 50).trim()
         setSessions(prev =>
           prev.map(s =>
             s.id === activeSessionId ? { ...s, title: newTitle } : s
@@ -194,10 +214,17 @@ export function ChatInterface() {
       {/* Main chat area */}
       <div className="flex flex-1 flex-col">
         {/* Header */}
-        <div className="border-b border-border bg-background px-6 py-4">
+        <div className="border-b border-border bg-background px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">
             {activeSession?.title || 'Chat'}
           </h1>
+          <Link
+            href="/algorithms"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent text-sm font-medium transition-colors"
+          >
+            <BookOpen className="h-4 w-4" />
+            Sorting Algorithms
+          </Link>
         </div>
 
         {/* Messages area */}
