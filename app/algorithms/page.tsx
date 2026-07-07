@@ -2,14 +2,15 @@
 
 import { useState } from 'react'
 import { SortingVisualizer } from '@/components/SortingVisualizer'
-import { AlgorithmsCatalog } from '@/components/AlgorithmsCatalog'
-import { AlgorithmComparison } from '@/components/AlgorithmComparison'
+import { AlgorithmsCatalogAll } from '@/components/AlgorithmsCatalogAll'
+import { AlgorithmComparisonAll } from '@/components/AlgorithmComparisonAll'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AlgorithmsPage() {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [showComparison, setShowComparison] = useState(false)
 
   return (
@@ -36,19 +37,22 @@ export default function AlgorithmsPage() {
               </Button>
             )}
           </div>
-          <h1 className="text-3xl font-bold">Sorting Algorithms</h1>
+          <h1 className="text-3xl font-bold">Data Structures & Algorithms</h1>
           <p className="text-muted-foreground mt-1">
-            Interactive visualizations and complexity analysis of 10 sorting algorithms
+            Interactive visualizations and complexity analysis of sorting, searching, and tree algorithms
           </p>
         </div>
       </div>
 
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {selectedAlgorithm ? (
+        {selectedAlgorithm && selectedCategory === 'sorting' ? (
           <div className="space-y-6">
             <Button
-              onClick={() => setSelectedAlgorithm(null)}
+              onClick={() => {
+                setSelectedAlgorithm(null)
+                setSelectedCategory(null)
+              }}
               variant="outline"
               className="gap-2"
             >
@@ -58,9 +62,12 @@ export default function AlgorithmsPage() {
             <SortingVisualizer algorithmKey={selectedAlgorithm} />
           </div>
         ) : showComparison ? (
-          <AlgorithmComparison />
+          <AlgorithmComparisonAll />
         ) : (
-          <AlgorithmsCatalog onSelectAlgorithm={setSelectedAlgorithm} />
+          <AlgorithmsCatalogAll onSelectAlgorithm={(key, category) => {
+            setSelectedAlgorithm(key)
+            setSelectedCategory(category)
+          }} />
         )}
       </div>
     </div>
