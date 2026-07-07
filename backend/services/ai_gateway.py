@@ -1,7 +1,7 @@
 import os
 import json
-import httpx
 from typing import Optional
+from openai import AsyncOpenAI
 
 # Mock responses for demonstration when API Gateway is unavailable
 MOCK_RESPONSES = {
@@ -34,12 +34,13 @@ class AIGateway:
         self.api_key = os.getenv('AI_GATEWAY_API_KEY')
         if not self.api_key:
             raise ValueError("AI_GATEWAY_API_KEY environment variable is not set")
-        # Use Vercel AI Gateway endpoint with OpenAI-compatible API
-        # The API key format indicates this is a Vercel AI Gateway key (vck_...)
-        self.base_url = "https://api.vercel.com/v1"
-        self.client = httpx.AsyncClient(
-            timeout=30.0,
-        )
+        # Initialize OpenAI client - uses OPENAI_API_KEY or falls back to mock responses
+        self.openai_key = os.getenv('OPENAI_API_KEY')
+        self.client = None
+        if self.openai_key:
+            self.client = AsyncOpenAI(api_key=self.openai_key)
+        else:
+            print("[v0] Warning: OPENAI_API_KEY not set, using mock responses only")
 
     async def generate(self, prompt: str) -> dict:
         """Generate code from a prompt"""
@@ -118,40 +119,25 @@ class AIGateway:
         )
 
     async def _call_ai(self, model: str, system: str, user_prompt: str, service_type: str = 'generate') -> dict:
-        """Generic method to call the AI Gateway using OpenAI-compatible API"""
+        """Generic method to call OpenAI API or use mock responses"""
         try:
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+            if not self.client:
+                print(f"[v0] No OpenAI client, using mock response for {service_type}")
+                return MOCK_RESPONSES.get(service_type, {"content": "Service unavailable"})
             
-            payload = {
-                "model": "openai/gpt-4-turbo",
-                "messages": [
+            print(f"[v0] Calling OpenAI API with model: gpt-3.5-turbo")
+            
+            response = await self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
                     {"role": "system", "content": system},
                     {"role": "user", "content": user_prompt},
                 ],
-                "temperature": 0.7,
-                "max_tokens": 2000,
-            }
-            
-            print(f"[v0] Calling AI Gateway with model: openai/gpt-4-turbo")
-            
-            response = await self.client.post(
-                f"{self.base_url}/chat/completions",
-                json=payload,
-                headers=headers,
+                temperature=0.7,
+                max_tokens=2000,
             )
 
-            if response.status_code != 200:
-                error_text = response.text
-                print(f"[v0] AI Gateway error: {response.status_code} - {error_text}")
-                # Fall back to mock response
-                return MOCK_RESPONSES.get(service_type, {"content": "Service unavailable"})
-
-            data = response.json()
-            message_content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-
+            message_content = response.choices[0].message.content
             print(f"[v0] AI Response received: {message_content[:100]}...")
             
             # Try to parse as JSON, otherwise return as plain text
@@ -165,10 +151,6 @@ class AIGateway:
                     "language": self._detect_language(message_content)
                 }
 
-        except httpx.TimeoutException:
-            print(f"[v0] AI call timeout, using mock response for {service_type}")
-            # Fall back to mock response
-            return MOCK_RESPONSES.get(service_type, {"content": "Request timed out"})
         except Exception as e:
             print(f"[v0] AI call failed: {str(e)}, using mock response for {service_type}")
             # Fall back to mock response
