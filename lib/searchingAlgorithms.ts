@@ -153,7 +153,7 @@ console.log(binarySearch(arr, 6))  // Output: -1`,
     spaceComplexity: 'O(1)',
     code: `function jumpSearch(arr, target) {
   const n = arr.length
-  const step = Math.floor(Math.sqrt(n))
+  let step = Math.floor(Math.sqrt(n))
   let prev = 0
   
   // Jump to find the block where element is present
