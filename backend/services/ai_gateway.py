@@ -34,12 +34,10 @@ class AIGateway:
         self.api_key = os.getenv('AI_GATEWAY_API_KEY')
         if not self.api_key:
             raise ValueError("AI_GATEWAY_API_KEY environment variable is not set")
+        # Use Vercel AI Gateway endpoint with OpenAI-compatible API
+        # The API key format indicates this is a Vercel AI Gateway key (vck_...)
         self.base_url = "https://api.vercel.com/v1"
         self.client = httpx.AsyncClient(
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
             timeout=30.0,
         )
 
@@ -120,19 +118,29 @@ class AIGateway:
         )
 
     async def _call_ai(self, model: str, system: str, user_prompt: str, service_type: str = 'generate') -> dict:
-        """Generic method to call the AI Gateway"""
+        """Generic method to call the AI Gateway using OpenAI-compatible API"""
         try:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
+            
+            payload = {
+                "model": "openai/gpt-4-turbo",
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "temperature": 0.7,
+                "max_tokens": 2000,
+            }
+            
+            print(f"[v0] Calling AI Gateway with model: openai/gpt-4-turbo")
+            
             response = await self.client.post(
-                f"{self.base_url}/chat.completions",
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "temperature": 0.7,
-                    "max_tokens": 2000,
-                },
+                f"{self.base_url}/chat/completions",
+                json=payload,
+                headers=headers,
             )
 
             if response.status_code != 200:
@@ -144,12 +152,18 @@ class AIGateway:
             data = response.json()
             message_content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
+            print(f"[v0] AI Response received: {message_content[:100]}...")
+            
             # Try to parse as JSON, otherwise return as plain text
             try:
                 result = json.loads(message_content)
                 return result
             except json.JSONDecodeError:
-                return {"content": message_content}
+                # Return the content as a structured response
+                return {
+                    "content": message_content,
+                    "language": self._detect_language(message_content)
+                }
 
         except httpx.TimeoutException:
             print(f"[v0] AI call timeout, using mock response for {service_type}")
@@ -159,6 +173,25 @@ class AIGateway:
             print(f"[v0] AI call failed: {str(e)}, using mock response for {service_type}")
             # Fall back to mock response
             return MOCK_RESPONSES.get(service_type, {"content": f"Error: {str(e)}"})
+    
+    def _detect_language(self, content: str) -> str:
+        """Detect programming language from content"""
+        content_lower = content.lower()
+        
+        if '```python' in content_lower or 'def ' in content_lower:
+            return 'python'
+        elif '```javascript' in content_lower or 'function ' in content_lower:
+            return 'javascript'
+        elif '```java' in content_lower or 'public class' in content_lower:
+            return 'java'
+        elif '```cpp' in content_lower or '#include' in content_lower:
+            return 'cpp'
+        elif '```csharp' in content_lower or 'using System' in content_lower:
+            return 'csharp'
+        elif '```typescript' in content_lower or ': string' in content_lower:
+            return 'typescript'
+        else:
+            return 'javascript'  # Default to JavaScript
 
     async def close(self):
         """Close the HTTP client"""
