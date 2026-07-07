@@ -118,7 +118,9 @@ export function ChatInterface() {
     setIsLoading(true)
 
     try {
+      console.log('[v0] Sending message:', { content, service })
       const response = await sendMessage(content, service)
+      console.log('[v0] Received response:', response)
 
       // Update session title if it's still "New Conversation"
       if (activeSession.title === 'New Conversation') {
