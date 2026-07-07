@@ -17,9 +17,10 @@ export async function sendMessage(
     console.log('[v0] API Call:', { service, API_BASE, payload })
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 90000) // 90 second timeout
 
     try {
+      console.log('[v0] Sending fetch request to:', `${API_BASE}/api/${service}`)
       const response = await fetch(`${API_BASE}/api/${service}`, {
         method: 'POST',
         headers: {
@@ -30,6 +31,7 @@ export async function sendMessage(
       })
 
       clearTimeout(timeoutId)
+      console.log('[v0] Response received:', response.status)
 
       if (!response.ok) {
         const errorData = await response.text()
@@ -37,7 +39,9 @@ export async function sendMessage(
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      return await response.json()
+      const data = await response.json()
+      console.log('[v0] Response JSON:', data)
+      return data
     } catch (fetchError) {
       clearTimeout(timeoutId)
       
@@ -50,6 +54,7 @@ export async function sendMessage(
         throw new Error(`Network error: Unable to reach backend at ${API_BASE}`)
       }
       
+      console.error('[v0] Catch block error:', fetchError)
       throw fetchError
     }
   } catch (error) {
